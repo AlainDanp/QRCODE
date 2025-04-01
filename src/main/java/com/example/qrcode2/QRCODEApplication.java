@@ -6,21 +6,24 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.QRCodeReader;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.transformation.SortedList;
-import com.example.qrcode2.SwingFXUtils;
+import javafx.collections.ObservableList;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.example.qrcode2.QRCODEController.QRcodeEntry;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.TextArea;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Hashtable;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -61,8 +64,7 @@ public class QRCODEApplication implements Initializable {
     private Button saveButton;
     @FXML
     private Button historiqueButton;
-    private List<QRcodeEntry> qrcodehistory;
-    private HistoriqueWindow historiqueWindow;
+    private List<QRCODEController.QRcodeEntry> qrcodehistory;
     private  List<QRcodeEntry> qrCodeHistory = new ArrayList<>();
     @FXML
     private Button customizeButton;
@@ -73,14 +75,11 @@ public class QRCODEApplication implements Initializable {
     private Color qrCodeColor;
 
 
-
-
-
     @FXML
     private void GeneratedButton(ActionEvent event) {
         String url = urlTextField.getText();
         if (qrcodehistory == null) {
-            qrcodehistory = new ArrayList<>();
+            qrcodehistory = new ArrayList<QRCODEController.QRcodeEntry>();
         }
 
         // Vérifier si l'URL est vide
@@ -104,12 +103,12 @@ public class QRCODEApplication implements Initializable {
             showPopup("QR Code généré avec succès!", popupX, popupY);
 
             // Ajouter l'entrée à l'historique
-            QRcodeEntry entry = new QRcodeEntry(url, new Date());
+            QRCODEController.QRcodeEntry entry = new QRCODEController.QRcodeEntry(url, new Date());
             qrcodehistory.add(entry);
 
             // Afficher l'historique dans la console (à des fins de test)
             System.out.println("Historique des QR code :");
-            for (QRcodeEntry qRcodeEntry : qrcodehistory) {
+            for (QRCODEController.QRcodeEntry qRcodeEntry : qrcodehistory) {
                 System.out.println("URL : " + qRcodeEntry.getUrl());
                 System.out.println("Date & heure de création : " + qRcodeEntry.getCreationTime());
                 System.out.println();
@@ -149,13 +148,11 @@ public class QRCODEApplication implements Initializable {
             e.printStackTrace();
         }
         return null;
-
     }
 
     private Image generateQRCodeImage2 (String url, Color qrCodeColor,Color backgroundColor) {
         final int QRCODE_SIZE = 250;
         final int MARGIN = 10;
-
 
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
@@ -286,7 +283,6 @@ public class QRCODEApplication implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         saveButton.setOnAction(this:: saveQrCode);
-        historiqueButton.setOnAction(event -> afficherHistorique());
 
     }
     @FXML
@@ -358,32 +354,7 @@ public class QRCODEApplication implements Initializable {
             return creationTime;
         }
     }
-    public void afficherHistorique() {
-        String url = urlTextField.getText();
-        if (qrcodehistory == null) {
-            qrcodehistory = new ArrayList<>();
-        }
-        if (!url.isEmpty()) {
-            Image qrCodeImage = generateQRCodeImage(url, qrCodeColor, backgroundColor);
-            if (qrCodeImage != null) {
-                ImageView qrCodeImageView = new ImageView(qrCodeImage);
-                qrCode.getChildren().clear();
-                qrCode.getChildren().add(qrCodeImageView);
-                QRcodeEntry entry = new QRcodeEntry(url, new Date());
-                qrcodehistory.add(entry);
-                StringBuilder historiqueBuilder = new StringBuilder();
-                for (QRcodeEntry qRcodeEntry : qrcodehistory) {
-                    historiqueBuilder.append("URL: ").append(qRcodeEntry.getUrl()).append("\n");
-                    historiqueBuilder.append("Date & heure: ").append(qRcodeEntry.getCreationTime()).append("\n\n");
-                }
-                String historique = historiqueBuilder.toString();
-                HistoriqueWindow historiqueWindow = new HistoriqueWindow();
-                historiqueWindow.afficherHistorique(historique);
-                historiqueWindow.show();
-            }
-        }
 
-    }
     @FXML
     private void customizeButton(ActionEvent event){
         ColorPicker QRCodeColorPicker = new ColorPicker();
@@ -452,4 +423,36 @@ public class QRCODEApplication implements Initializable {
         Timeline timeline = new Timeline(new KeyFrame(duration, event -> popup.hide()));
         timeline.play();
     }
+    @FXML
+    private void onHistoryButton(ActionEvent event) {
+        try {
+            // Charger la vue de l'historique depuis le fichier FXML
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("history-view.fxml"));
+            Parent historyPage = fxmlLoader.load();
+
+            // Créer un nouveau stage pour la vue de l'historique
+            Stage historyStage = new Stage();
+            historyStage.setScene(new Scene(historyPage));
+
+            // Récupérer le contrôleur de la vue de l'historique
+            HistoryController historyController = fxmlLoader.getController();
+
+            // Charger et initialiser l'historique (ajuster cela en fonction de votre modèle d'historique)
+            List<String> historyData = loadHistoryData(); // Remplacez par votre méthode pour charger l'historique
+            historyController.initialize(historyData);
+
+            // Afficher la vue de l'historique
+            historyStage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Méthode fictive pour charger des données d'historique (adapter selon votre modèle)
+    private List<String> loadHistoryData() {
+        // ... (chargement des données d'historique depuis votre modèle)
+        return List.of("QR Code 1", "QR Code 2", "QR Code 3"); // Exemple, remplacez avec vos données réelles
+    }
+
+
 }
