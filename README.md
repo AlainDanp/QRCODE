@@ -6,9 +6,11 @@ Il offre également des fonctionnalités de **personnalisation des couleurs** et
 
 ---
 
-![Apperçus de l'application(image/App.png)
-![Apperçus de l'application(image/App2.png)
-![Apperçus de l'application(image/App3.png)
+![Apperçus de l'application](image/App.png)
+
+![Apperçus de l'application](image/App2.png)
+
+![Apperçus de l'application](image/App3.png)
 
 ## ✨ Fonctionnalités principales
 
